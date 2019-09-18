@@ -447,7 +447,8 @@ export class SessionDescriptionHandler extends EventEmitter implements SessionDe
         throw new Exceptions.SessionDescriptionHandlerError("Missing local description");
       }
       const localDescription: RTCSessionDescriptionInit =
-        this.createRTCSessionDescriptionInit(this.peerConnection.localDescription);
+       this.createRTCSessionDescriptionInit(this.peerConnection.localDescription);
+      // const localDescription = this.peerConnection.localDescription;
       return Utils.reducePromises(modifiers, localDescription);
     }).then((localDescription: RTCSessionDescriptionInit) => {
       this.setDirection(localDescription.sdp || "");

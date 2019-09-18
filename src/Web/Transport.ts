@@ -370,6 +370,7 @@ export class Transport extends TransportBase {
       this.ws.removeEventListener("message", this.boundOnMessage);
       this.ws.removeEventListener("close", this.boundOnClose);
       this.ws.removeEventListener("error", this.boundOnError);
+      this.ws.close();
       this.ws = undefined;
     }
   }

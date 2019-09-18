@@ -156,6 +156,12 @@ export class UA extends EventEmitter {
   public data: any;
   public logger: Logger;
 
+  /**
+   * isBusyCauseOutgoingCallInProgress parameter added to adjust logic for incoming call during
+   * outgoing call (remove "180 Ringing" status and send "486 Busy Here" exactly after "100 Trying" status)
+   */
+  public isBusyCauseOutgoingCallInProgress: boolean = false;
+
   public userAgentCore: UserAgentCore;
 
   private log: LoggerFactory;
@@ -336,7 +342,9 @@ export class UA extends EventEmitter {
         if (context.autoSendAnInitialProvisionalResponse) {
           context.progress();
         }
-        this.emit("invite", context);
+        if (!this.isBusyCauseOutgoingCallInProgress) {
+          this.emit("invite", context);
+        }
       },
       onMessage: (incomingMessageRequest: IncomingMessageRequest): void => {
         // Ported - handling of out of dialog MESSAGE.
@@ -514,10 +522,6 @@ export class UA extends EventEmitter {
       return this;
     }
 
-    // Close registerContext
-    this.logger.log("closing registerContext");
-    this.registerContext.close();
-
     // Run terminate on every Session
     for (const session in this.sessions) {
       if (this.sessions[session]) {
@@ -551,9 +555,19 @@ export class UA extends EventEmitter {
 
     this.status = UAStatus.STATUS_USER_CLOSED;
 
-    // Disconnect the transport and reset user agent core
-    this.transport.disconnect();
-    this.userAgentCore.reset();
+    // Disconnect the transport and reset user agent core after successful unregistration
+    this.once("unregistered", () => {
+      // tslint:disable-next-line:no-console
+      console.log("unregistered event received!");
+      if (this.transport) {
+          this.transport.disconnect();
+      }
+      this.userAgentCore.reset();
+    });
+
+    // Close registerContext
+    this.logger.log("closing registerContext");
+    this.registerContext.close();
 
     if (this.configuration.autostop) {
       // Google Chrome Packaged Apps don't allow 'unload' listeners: unload is not available in packaged apps
